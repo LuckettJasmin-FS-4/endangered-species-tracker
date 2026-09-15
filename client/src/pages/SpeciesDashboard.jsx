@@ -16,7 +16,7 @@ function SpeciesDashboard() {
     const loadSpecies = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8000/api/species"
+          "/api/species"
         );
   
         setSpecies(response.data);
@@ -31,7 +31,7 @@ function SpeciesDashboard() {
   const handleDelete = async (id) => {
     try {
       await axios.delete(
-        `http://localhost:8000/api/species/${id}`
+        `/api/species/${id}`
       );
 
       setSpecies(species.filter((animal) => animal._id !== id));
@@ -60,7 +60,7 @@ function SpeciesDashboard() {
   const handleUpdate = async (id) => {
     try {
       const response = await axios.patch(
-        `http://localhost:8000/api/species/${id}`,
+        `/api/species/${id}`,
         editData
       );
 

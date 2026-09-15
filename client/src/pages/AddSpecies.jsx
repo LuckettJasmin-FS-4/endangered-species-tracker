@@ -22,8 +22,7 @@ function AddSpecies() {
     event.preventDefault();
 
     try {
-      await axios.post("http://localhost:8000/api/species", formData);
-
+        await axios.post("/api/species", formData);
       setFormData({
         name: "",
         status: "",
