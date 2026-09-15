@@ -1,0 +1,217 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f1e8;
+  color: #24352b;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  background: #173f2b;
+  color: white;
+  padding: 28px 8%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+}
+
+.header h1 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+}
+
+.header p {
+  margin: 0;
+  color: #d9e5dc;
+}
+
+.header nav {
+  display: flex;
+  gap: 12px;
+}
+
+.header nav a {
+  color: white;
+  text-decoration: none;
+  background: #2f6b48;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.header nav a:hover {
+  background: #4d8b63;
+  transform: translateY(-2px);
+}
+
+.page {
+  width: min(1100px, 90%);
+  margin: 0 auto;
+  padding: 60px 0;
+}
+
+.page-heading {
+  margin-bottom: 35px;
+}
+
+.eyebrow {
+  color: #4d7c59;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.page-heading h2 {
+  font-size: 2.3rem;
+  margin: 0 0 10px;
+  color: #173f2b;
+}
+
+.page-heading > p:last-child {
+  color: #5d695f;
+  font-size: 1.05rem;
+}
+
+.species-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 24px;
+}
+
+.species-card {
+  background: white;
+  border-radius: 16px;
+  padding: 25px;
+  border-left: 6px solid #4d7c59;
+  box-shadow: 0 8px 22px rgba(35, 61, 44, 0.12);
+}
+
+.species-card h3 {
+  color: #173f2b;
+  margin-top: 0;
+  font-size: 1.4rem;
+}
+
+.species-card p {
+  line-height: 1.6;
+}
+
+.empty-state {
+  background: white;
+  text-align: center;
+  padding: 55px 25px;
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(35, 61, 44, 0.1);
+}
+
+.empty-state h3 {
+  color: #173f2b;
+}
+
+.species-form {
+  max-width: 650px;
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(35, 61, 44, 0.12);
+}
+
+.species-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+  font-weight: bold;
+  color: #173f2b;
+}
+
+.species-form input,
+.species-form select,
+.edit-form input,
+.edit-form select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #b7c4ba;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+}
+
+.species-form input:focus,
+.species-form select:focus,
+.edit-form input:focus,
+.edit-form select:focus {
+  outline: 2px solid #4d7c59;
+  border-color: transparent;
+}
+
+.species-form button,
+.card-buttons button {
+  border: none;
+  background: #2f6b48;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.species-form button:hover,
+.card-buttons button:hover {
+  background: #173f2b;
+}
+
+.card-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.card-buttons button:last-child {
+  background: #8b3e36;
+}
+
+.card-buttons button:last-child:hover {
+  background: #682d28;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header nav {
+    width: 100%;
+  }
+
+  .header nav a {
+    flex: 1;
+    text-align: center;
+  }
+
+  .page {
+    padding: 40px 0;
+  }
+
+  .page-heading h2 {
+    font-size: 1.8rem;
+  }
+}
