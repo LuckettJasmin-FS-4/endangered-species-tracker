@@ -1,9 +1,30 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+} from "react-router-dom";
 import SpeciesDashboard from "./pages/SpeciesDashboard";
 import AddSpecies from "./pages/AddSpecies";
+import AuthPage from "./pages/AuthPage";
 import "./App.css";
 
 function App() {
+  const [token, setToken] = useState(() =>
+    localStorage.getItem("endangered_species_token")
+  );
+
+  const handleLogin = (newToken) => {
+    setToken(newToken);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("endangered_species_token");
+    setToken(null);
+  };
+
   return (
     <BrowserRouter>
       <div className="app">
@@ -13,16 +34,31 @@ function App() {
             <p>Track and manage species at risk around the world.</p>
           </div>
 
-          <nav>
-            <Link to="/">Species</Link>
-            <Link to="/add">Add Species</Link>
-          </nav>
+          {token && (
+            <nav>
+              <Link to="/">Species</Link>
+              <Link to="/add">Add Species</Link>
+
+              <button
+                type="button"
+                className="logout-button"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </nav>
+          )}
         </header>
 
-        <Routes>
-          <Route path="/" element={<SpeciesDashboard />} />
-          <Route path="/add" element={<AddSpecies />} />
-        </Routes>
+        {!token ? (
+          <AuthPage onLogin={handleLogin} />
+        ) : (
+          <Routes>
+            <Route path="/" element={<SpeciesDashboard />} />
+            <Route path="/add" element={<AddSpecies />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
       </div>
     </BrowserRouter>
   );

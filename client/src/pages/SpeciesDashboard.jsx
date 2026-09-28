@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/api";
 
 function SpeciesDashboard() {
   const [species, setSpecies] = useState([]);
@@ -15,8 +15,8 @@ function SpeciesDashboard() {
   useEffect(() => {
     const loadSpecies = async () => {
       try {
-        const response = await axios.get(
-          "/api/species"
+        const response = await api.get(
+          "/species"
         );
   
         setSpecies(response.data);
@@ -30,8 +30,8 @@ function SpeciesDashboard() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(
-        `/api/species/${id}`
+      await api.delete(
+        `/species/${id}`
       );
 
       setSpecies(species.filter((animal) => animal._id !== id));
@@ -59,8 +59,8 @@ function SpeciesDashboard() {
 
   const handleUpdate = async (id) => {
     try {
-      const response = await axios.patch(
-        `/api/species/${id}`,
+      const response = await api.patch(
+        `/species/${id}`,
         editData
       );
 

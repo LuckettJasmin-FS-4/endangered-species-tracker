@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 
 function AddSpecies() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ function AddSpecies() {
     event.preventDefault();
 
     try {
-        await axios.post("/api/species", formData);
+        await api.post("/species", formData);
       setFormData({
         name: "",
         status: "",
