@@ -6,6 +6,10 @@ The application was created to demonstrate CRUD functionality using React, Node.
 
 ## Features
 
+- User registration and login
+- Password hashing with bcrypt
+- JWT authentication
+- Protected API routes
 - View endangered species stored in MongoDB
 - Add a new species
 - Edit an existing species
@@ -32,12 +36,15 @@ The application was created to demonstrate CRUD functionality using React, Node.
 - Expo
 - JavaScript
 - Fetch API
+- Expo SecureStore
 
 ### Backend
 
 - Node.js
 - Express
 - Mongoose
+- bcryptjs
+- JSON Web Token
 - CORS
 - dotenv
 
@@ -59,7 +66,20 @@ Each species record contains:
 - `habitat` - Primary habitat
 - `created_at` - Date the record was created
 
-## API Routes
+## Authentication
+
+Users can register and log in through the API. Passwords are hashed with bcrypt and successful authentication returns a JSON Web Token (JWT). The React Native client sends the JWT with protected API requests. Unauthenticated requests to the Species API return a 401 response.
+
+### Authentication Routes
+
+| Method | Route | Description |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Log in an existing user |
+
+## Protected API Routes
+
+All Species routes require a valid Bearer token.
 
 | Method | Route | Description |
 | --- | --- | --- |
@@ -112,6 +132,7 @@ Create a `.env` file in the root directory and add:
 
 ```text
 MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
 ```
 
 ## Run the Web Application

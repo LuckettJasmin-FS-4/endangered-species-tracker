@@ -13,7 +13,9 @@ app.use(express.json());
 
 // Routes
 const speciesRouter = require("./routes/species");
+const authRouter = require("./routes/auth");
 app.use("/api/species", speciesRouter);
+app.use("/api/auth", authRouter);
 
 // Serve React frontend in production
 if (process.env.NODE_ENV === "production") {

@@ -2,19 +2,32 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import * as SecureStore from "expo-secure-store";
 
-const API_URL = "http://localhost:8000/api/species";
+const API_BASE_URL = "http://localhost:8000/api";
+const TOKEN_KEY = "endangered_species_token";
 
 export default function App() {
+  const [token, setToken] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authScreen, setAuthScreen] = useState("login");
+  const [authError, setAuthError] = useState("");
+
+  const [registerName, setRegisterName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [species, setSpecies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [name, setName] = useState("");
@@ -22,12 +35,147 @@ export default function App() {
   const [habitat, setHabitat] = useState("");
   const [editingId, setEditingId] = useState(null);
 
-  // READ
+  useEffect(() => {
+    restoreSession();
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchSpecies();
+    }
+  }, [token]);
+
+  const saveToken = async (newToken) => {
+    if (Platform.OS === "web") {
+      localStorage.setItem(TOKEN_KEY, newToken);
+    } else {
+      await SecureStore.setItemAsync(TOKEN_KEY, newToken);
+    }
+
+    setToken(newToken);
+  };
+
+  const restoreSession = async () => {
+    try {
+      const savedToken =
+        Platform.OS === "web"
+          ? localStorage.getItem(TOKEN_KEY)
+          : await SecureStore.getItemAsync(TOKEN_KEY);
+
+      if (savedToken) {
+        setToken(savedToken);
+      }
+    } catch (err) {
+      console.error("Unable to restore session:", err);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const logout = async () => {
+    if (Platform.OS === "web") {
+      localStorage.removeItem(TOKEN_KEY);
+    } else {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    }
+
+    setToken(null);
+    setSpecies([]);
+    setEmail("");
+    setPassword("");
+    setAuthError("");
+    clearForm();
+  };
+
+  const register = async () => {
+    if (!registerName.trim() || !email.trim() || !password.trim()) {
+      setAuthError("Please complete all fields.");
+      return;
+    }
+
+    try {
+      setAuthError("");
+
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: registerName,
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to register.");
+      }
+
+      await saveToken(data.token);
+      setRegisterName("");
+      setEmail("");
+      setPassword("");
+    } catch (err) {
+      setAuthError(err.message);
+    }
+  };
+
+  const login = async () => {
+    if (!email.trim() || !password.trim()) {
+      setAuthError("Please enter your email and password.");
+      return;
+    }
+
+    try {
+      setAuthError("");
+
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to login.");
+      }
+
+      await saveToken(data.token);
+      setEmail("");
+      setPassword("");
+    } catch (err) {
+      setAuthError(err.message);
+    }
+  };
+
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  });
+
   const fetchSpecies = async () => {
     try {
+      setLoading(true);
       setError("");
 
-      const response = await fetch(API_URL);
+      const response = await fetch(`${API_BASE_URL}/species`, {
+        headers: authHeaders(),
+      });
+
+      if (response.status === 401) {
+        await logout();
+        setAuthError("Your session expired. Please log in again.");
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Unable to load species.");
@@ -43,10 +191,6 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    fetchSpecies();
-  }, []);
-
   const clearForm = () => {
     setName("");
     setStatus("");
@@ -54,7 +198,6 @@ export default function App() {
     setEditingId(null);
   };
 
-  // CREATE
   const addSpecies = async () => {
     if (!name.trim() || !status.trim() || !habitat.trim()) {
       setError("Please complete all three fields.");
@@ -64,11 +207,9 @@ export default function App() {
     try {
       setError("");
 
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_BASE_URL}/species`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
           name,
           status,
@@ -88,7 +229,6 @@ export default function App() {
     }
   };
 
-  // Prepare form for editing
   const startEditing = (item) => {
     setEditingId(item._id);
     setName(item.name);
@@ -97,7 +237,6 @@ export default function App() {
     setError("");
   };
 
-  // UPDATE
   const updateSpecies = async () => {
     if (!name.trim() || !status.trim() || !habitat.trim()) {
       setError("Please complete all three fields.");
@@ -107,17 +246,18 @@ export default function App() {
     try {
       setError("");
 
-      const response = await fetch(`${API_URL}/${editingId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          status,
-          habitat,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/species/${editingId}`,
+        {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            name,
+            status,
+            habitat,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Unable to update species.");
@@ -131,13 +271,13 @@ export default function App() {
     }
   };
 
-  // DELETE
   const deleteSpecies = async (id) => {
     try {
       setError("");
 
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/species/${id}`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
 
       if (!response.ok) {
@@ -154,6 +294,103 @@ export default function App() {
       setError("Could not delete the species.");
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <View style={styles.loadingScreen}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" />
+        <Text style={styles.loadingText}>Checking your session...</Text>
+      </View>
+    );
+  }
+
+  if (!token) {
+    return (
+      <View style={styles.authContainer}>
+        <StatusBar style="light" />
+
+        <ScrollView
+          contentContainerStyle={styles.authScroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.authBrand}>
+            <Text style={styles.eyebrow}>WILDLIFE CONSERVATION</Text>
+            <Text style={styles.authTitle}>
+              Endangered Species Tracker
+            </Text>
+            <Text style={styles.authSubtitle}>
+              Sign in to securely manage endangered species records.
+            </Text>
+          </View>
+
+          <View style={styles.authCard}>
+            <Text style={styles.formTitle}>
+              {authScreen === "login"
+                ? "Welcome Back"
+                : "Create Account"}
+            </Text>
+
+            {authScreen === "register" && (
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                value={registerName}
+                onChangeText={setRegisterName}
+                autoCapitalize="words"
+              />
+            )}
+
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+
+            {authError ? (
+              <Text style={styles.error}>{authError}</Text>
+            ) : null}
+
+            <Pressable
+              style={styles.addButton}
+              onPress={authScreen === "login" ? login : register}
+            >
+              <Text style={styles.addButtonText}>
+                {authScreen === "login" ? "Sign In" : "Register"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.switchButton}
+              onPress={() => {
+                setAuthError("");
+                setAuthScreen(
+                  authScreen === "login" ? "register" : "login"
+                );
+              }}
+            >
+              <Text style={styles.switchText}>
+                {authScreen === "login"
+                  ? "Need an account? Register"
+                  : "Already have an account? Sign In"}
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   const renderSpecies = ({ item }) => (
     <View style={styles.card}>
@@ -189,14 +426,18 @@ export default function App() {
       <StatusBar style="light" />
 
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>WILDLIFE CONSERVATION</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.eyebrow}>WILDLIFE CONSERVATION</Text>
 
-        <Text style={styles.title}>
-          Endangered Species Tracker
-        </Text>
+          <Pressable style={styles.logoutButton} onPress={logout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.title}>Endangered Species Tracker</Text>
 
         <Text style={styles.subtitle}>
-          Track and manage endangered species records.
+          Authenticated access to protected wildlife records.
         </Text>
       </View>
 
@@ -250,9 +491,7 @@ export default function App() {
 
         <View style={styles.listHeader}>
           <Text style={styles.sectionTitle}>Species</Text>
-          <Text style={styles.count}>
-            {species.length} tracked
-          </Text>
+          <Text style={styles.count}>{species.length} tracked</Text>
         </View>
 
         {loading ? (
@@ -282,11 +521,65 @@ const styles = StyleSheet.create({
     backgroundColor: "#071a13",
   },
 
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: "#071a13",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    color: "#ffffff",
+    marginTop: 14,
+    fontSize: 16,
+  },
+
+  authContainer: {
+    flex: 1,
+    backgroundColor: "#071a13",
+  },
+
+  authScroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+
+  authBrand: {
+    marginBottom: 28,
+  },
+
+  authTitle: {
+    color: "#ffffff",
+    fontSize: 36,
+    fontWeight: "800",
+    marginTop: 8,
+  },
+
+  authSubtitle: {
+    color: "#c7ded1",
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 10,
+  },
+
+  authCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    padding: 22,
+  },
+
   header: {
     backgroundColor: "#0d3324",
     paddingHorizontal: 24,
     paddingTop: 50,
     paddingBottom: 32,
+  },
+
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   eyebrow: {
@@ -308,6 +601,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 23,
     marginTop: 10,
+  },
+
+  logoutButton: {
+    borderWidth: 1,
+    borderColor: "#8dd7a9",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+
+  logoutText: {
+    color: "#ffffff",
+    fontWeight: "700",
   },
 
   content: {
@@ -354,6 +660,18 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "#ffffff",
     fontSize: 16,
+    fontWeight: "700",
+  },
+
+  switchButton: {
+    alignItems: "center",
+    paddingVertical: 14,
+    marginTop: 6,
+  },
+
+  switchText: {
+    color: "#176b45",
+    fontSize: 15,
     fontWeight: "700",
   },
 
@@ -473,8 +791,8 @@ const styles = StyleSheet.create({
 
   error: {
     color: "#b42318",
-    fontSize: 16,
-    marginBottom: 14,
+    fontSize: 15,
+    marginBottom: 12,
   },
 
   empty: {
